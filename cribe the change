@@ -1,0 +1,103 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex 1bea932..9324690 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -1,4 +1,3 @@[m
+[31m-<<<<<<< HEAD[m
+ # Jrent — Student Marketplace[m
+ [m
+ A modern, responsive marketplace where students can buy and sell products on campus.[m
+[36m@@ -51,57 +50,3 @@[m [mJrent/[m
+ ## Notes[m
+ [m
+ This is a front-end demo. Listings, cart, and login data are stored in your browser's localStorage — nothing is sent to a server. To make it production-ready, connect a backend (e.g. Supabase, Firebase) for auth, payments, and persistent storage.[m
+[31m-=======[m
+[31m-# Jrent — Student Marketplace[m
+[31m-[m
+[31m-A modern, responsive marketplace where students can buy and sell products on campus.[m
+[31m-[m
+[31m-## Features[m
+[31m-[m
+[31m-- **Browse marketplace** — Search, filter by category, and sort by price or name[m
+[31m-- **Create listings** — Publish products with title, price, description, location, and contact[m
+[31m-- **Shopping cart** — Add items, adjust quantities, and demo checkout[m
+[31m-- **Product details** — View full listing info and email sellers directly[m
+[31m-- **Demo login** — Sign in with name and email (stored locally in your browser)[m
+[31m-- **Mobile-friendly** — Responsive layout with hamburger navigation[m
+[31m-[m
+[31m-## Quick start[m
+[31m-[m
+[31m-No build step is required. Open [index.html](index.html) directly in a modern browser, or run a local static server:[m
+[31m-[m
+[31m-```bash[m
+[31m-# Python[m
+[31m-python -m http.server 8080[m
+[31m-[m
+[31m-# Node (if npx is available)[m
+[31m-npx serve .[m
+[31m-```[m
+[31m-[m
+[31m-Then visit `http://localhost:8080`.[m
+[31m-[m
+[31m-## Deployment notes[m
+[31m-[m
+[31m-- The site is fully static and can be deployed to any host that serves files directly, such as GitHub Pages, Netlify, or Vercel.[m
+[31m-- To publish, upload the repository contents to the host root and ensure the files remain in the same relative structure.[m
+[31m-- If you later connect authentication or persistent storage, replace the browser-only LocalStorage data layer with a backend service.[m
+[31m-[m
+[31m-## Tech stack[m
+[31m-[m
+[31m-- HTML5, CSS3, vanilla JavaScript[m
+[31m-- LocalStorage for listings, cart, and user session[m
+[31m-- Plus Jakarta Sans via Google Fonts[m
+[31m-[m
+[31m-## Project structure[m
+[31m-[m
+[31m-```[m
+[31m-Jrent/[m
+[31m-├── index.html   # Main page[m
+[31m-├── styles.css   # Styles and animations[m
+[31m-├── app.js       # Marketplace logic[m
+[31m-└── README.md[m
+[31m-```[m
+[31m-[m
+[31m-## Notes[m
+[31m-[m
+[31m-This is a front-end demo. Listings, cart, and login data are stored in your browser's localStorage — nothing is sent to a server. To make it production-ready, connect a backend (e.g. Supabase, Firebase) for auth, payments, and persistent storage.[m
+[31m->>>>>>> 7317293a36d9c483c372e1db50011a893c8c15a4[m
+[1mdiff --git a/figure-viewer.js b/figure-viewer.js[m
+[1mindex 54d9311..c31d537 100644[m
+[1m--- a/figure-viewer.js[m
+[1m+++ b/figure-viewer.js[m
+[36m@@ -83,8 +83,4 @@[m [mif (mount) {[m
+ [m
+   new ResizeObserver(resize).observe(mount);[m
+   resize();[m
+[31m-<<<<<<< HEAD[m
+ }[m
+[31m-=======[m
+[31m-}[m
+[31m->>>>>>> 7317293a36d9c483c372e1db50011a893c8c15a4[m
+[1mdiff --git a/styles.css b/styles.css[m
+[1mindex 42aeb7c..6719ffb 100644[m
+[1m--- a/styles.css[m
+[1m+++ b/styles.css[m
+[36m@@ -1,4 +1,3 @@[m
+[31m-<<<<<<< HEAD[m
+ ﻿:root {[m
+   --bg: #0a0f1a;[m
+   --panel: #111827;[m
+[36m@@ -1345,8 +1344,6 @@[m [mtextarea {[m
+ .float-card__image { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; }[m
+ .modal__image.product-image { height: 220px; margin: -8px -8px 20px; border-radius: 8px; }[m
+ .cart-item__icon.product-image { flex: 0 0 52px; width: 52px; height: 52px; border-radius: 7px; }[m
+[31m-=======[m
+[31m-﻿:root {[m
+   --bg: #0a0f1a;[m
+   --panel: #111827;[m
+   --surface: rgba(255, 255, 255, 0.04);[m
+[36m@@ -2692,4 +2689,3 @@[m [mtextarea {[m
+ .float-card__image { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; }[m
+ .modal__image.product-image { height: 220px; margin: -8px -8px 20px; border-radius: 8px; }[m
+ .cart-item__icon.product-image { flex: 0 0 52px; width: 52px; height: 52px; border-radius: 7px; }[m
+[31m->>>>>>> 7317293a36d9c483c372e1db50011a893c8c15a4[m

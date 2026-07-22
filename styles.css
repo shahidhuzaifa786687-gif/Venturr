@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ﻿:root {
   --bg: #0a0f1a;
   --panel: #111827;
@@ -1345,8 +1344,6 @@ textarea {
 .float-card__image { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; }
 .modal__image.product-image { height: 220px; margin: -8px -8px 20px; border-radius: 8px; }
 .cart-item__icon.product-image { flex: 0 0 52px; width: 52px; height: 52px; border-radius: 7px; }
-=======
-﻿:root {
   --bg: #0a0f1a;
   --panel: #111827;
   --surface: rgba(255, 255, 255, 0.04);
@@ -2692,4 +2689,3 @@ textarea {
 .float-card__image { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; }
 .modal__image.product-image { height: 220px; margin: -8px -8px 20px; border-radius: 8px; }
 .cart-item__icon.product-image { flex: 0 0 52px; width: 52px; height: 52px; border-radius: 7px; }
->>>>>>> 7317293a36d9c483c372e1db50011a893c8c15a4

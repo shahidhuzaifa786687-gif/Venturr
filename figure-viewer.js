@@ -83,8 +83,4 @@ if (mount) {
 
   new ResizeObserver(resize).observe(mount);
   resize();
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 7317293a36d9c483c372e1db50011a893c8c15a4

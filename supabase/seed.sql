@@ -1,0 +1,12 @@
+-- Intentionally empty.
+--
+-- `supabase db reset` must produce a clean database without fictional
+-- campuses, users, memberships, listings, services, messages, or reviews.
+--
+-- To add isolated local demo records explicitly, run:
+--   psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 \
+--     -f supabase/demo/seed_demo_data.sql
+--
+-- To remove only records created by that script, run:
+--   psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 \
+--     -f supabase/demo/drop_demo_data.sql

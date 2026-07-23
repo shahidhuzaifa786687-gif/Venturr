@@ -1,52 +1,184 @@
-# Jrent — Student Marketplace
+# Venturr
 
-A modern, responsive marketplace where students can buy and sell products on campus.
+Venturr is a student-first campus exchange for buying, renting, giving away, and
+requesting useful items from nearby verified students. It also includes a
+separate Services area where students can offer tutoring, coaching, debugging,
+creative feedback, and practical help.
 
-## Features
+This repository is a from-scratch React rebuild of the original browser-only
+prototype. The unsafe legacy implementation has been removed from the working
+tree; its audit remains in `docs/LEGACY_AUDIT.md` and its source remains
+recoverable from Git history.
 
-- **Browse marketplace** — Search, filter by category, and sort by price or name
-- **Create listings** — Publish products with title, price, description, location, and contact
-- **Shopping cart** — Add items, adjust quantities, and demo checkout
-- **Product details** — View full listing info and email sellers directly
-- **Demo login** — Sign in with name and email (stored locally in your browser)
-- **Mobile-friendly** — Responsive layout with hamburger navigation
+## Current status
 
-## Quick start
+The responsive frontend now starts with a real Supabase authentication entry:
 
-No build step is required. Open [index.html](index.html) directly in a modern browser, or run a local static server:
+- Public sign-in and account-creation landing page
+- Email/password sign-up with confirmation callback support
+- Protected marketplace, services, saved, inbox, and profile routes
+- Item-only Marketplace with sale, rental, free, and wanted filters
+- A distinct Services route and service-posting flow
+- Search, category/rate/zone filters, saved items, inbox, profile, and safety pages
+- Offer, request, message, and post dialogs
+- Light and dark themes
+- Desktop, tablet, and mobile navigation
+- Academic-integrity boundaries for student services
+- Client validation, safe React text rendering, and private-contact UX
+
+No campus, student, listing, service, conversation, rating, or image fixture is
+bundled into the browser. Authenticated product routes therefore start empty
+until the Supabase read/write data layer and campus onboarding are connected.
+
+Supabase migrations, RLS policies, Storage policy scaffolding, opt-in demo SQL,
+and database policy tests are included.
+
+## Product model
+
+Marketplace and Services are intentionally separate:
+
+| Marketplace | Services |
+| --- | --- |
+| One-off physical inventory | Repeatable student availability |
+| Sale, rental, free, or wanted | Hourly, session, or scoped-project rate |
+| Item condition and pickup zone | Scope, format, availability, and integrity |
+| Offer, chat, inspect, handoff | Request, chat, session, completion |
+
+The Marketplace must never render service cards. Services that enable
+impersonation, assessment-taking, or submission of another student's graded
+work are prohibited.
+
+## Technology
+
+- React 19, TypeScript, and Vite
+- React Router
+- Supabase JS with PKCE-ready browser configuration
+- Zod validation
+- Phosphor icons
+- Self-hosted Archivo and Inter variable fonts
+- Vitest and React Testing Library
+- Supabase Postgres migrations and pgTAP policy tests
+- Vercel-ready SPA configuration
+
+## Run locally
+
+Requirements:
+
+- Node.js 22.x
+- npm 10 or newer
 
 ```bash
-# Python
-python -m http.server 8080
-
-# Node (if npx is available)
-npx serve .
+npm ci
+npm run dev
 ```
 
-Then visit `http://localhost:8080`.
+Open `http://127.0.0.1:5173/`. The authentication landing page renders without
+environment variables, but sign-up and sign-in require Supabase configuration.
 
-## Deployment notes
+To prepare for Supabase:
 
-- The site is fully static and can be deployed to any host that serves files directly, such as GitHub Pages, Netlify, or Vercel.
-- To publish, upload the repository contents to the host root and ensure the files remain in the same relative structure.
-- If you later connect authentication or persistent storage, replace the browser-only LocalStorage data layer with a backend service.
-
-## Tech stack
-
-- HTML5, CSS3, vanilla JavaScript
-- LocalStorage for listings, cart, and user session
-- Plus Jakarta Sans via Google Fonts
-
-## Project structure
-
-```
-Jrent/
-├── index.html   # Main page
-├── styles.css   # Styles and animations
-├── app.js       # Marketplace logic
-└── README.md
+```bash
+copy .env.example .env.local
 ```
 
-## Notes
+For the local Supabase stack, run `npx supabase start`, then copy its `API_URL`
+and `PUBLISHABLE_KEY` into:
 
-This is a front-end demo. Listings, cart, and login data are stored in your browser's localStorage — nothing is sent to a server. To make it production-ready, connect a backend (e.g. Supabase, Firebase) for auth, payments, and persistent storage.
+```text
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_PUBLISHABLE_KEY=<local PUBLISHABLE_KEY>
+```
+
+`.env.local` takes precedence over `.env`, which lets local development use
+the local Supabase stack without overwriting hosted Preview or production
+settings. Restart Vite after changing either environment file.
+
+Local email confirmation is enabled. After creating an account, open the local
+development inbox at `http://127.0.0.1:54324`, confirm the address, and then
+sign in. Hosted environments must use their configured SMTP provider instead.
+
+Never place a Supabase secret/service-role key, database URL, SMTP credential,
+or CAPTCHA secret in a `VITE_` variable. Vite embeds those values in the public
+browser bundle.
+
+## Quality commands
+
+```bash
+npm run typecheck
+npm run test
+npm run build
+npm audit --omit=dev --audit-level=high
+```
+
+`npm run check` runs the typecheck, UI/unit tests, and production build.
+`npm run verify` adds a production-dependency vulnerability audit. Both local
+development and Vercel install the exact dependency graph from
+`package-lock.json` with `npm ci`.
+
+## Supabase
+
+The backend source of truth is in `supabase/`:
+
+- Ordered migrations under `supabase/migrations/`
+- Local configuration in `supabase/config.toml`
+- A deliberately empty default `supabase/seed.sql`
+- Isolated demo utilities under `supabase/demo/`
+- Authorization tests in `supabase/tests/database/`
+
+With Docker Desktop and the Supabase CLI available:
+
+```bash
+npx supabase start
+npx supabase db reset
+npx supabase db lint
+npx supabase test db supabase/tests/database
+```
+
+Use separate Supabase projects for development, Vercel Preview, and production.
+RLS and least-privilege grants are the final authorization boundary; the UI is
+never an authorization control.
+
+## Vercel
+
+`vercel.json` provides the Vite build, SPA fallback, immutable hashed-asset
+caching, CSP, and baseline security headers.
+
+Before connecting a real Supabase project, update the CSP in `vercel.json` with
+that project's exact HTTPS and WebSocket origins. Do not use
+`https://*.supabase.co`.
+
+See `docs/DEPLOYMENT.md` for the complete environment, migration, CSP, Auth,
+preview, and production checklist.
+
+## Repository map
+
+```text
+src/                  React application, routes, components, state, and tests
+supabase/             Database migrations, RLS, Storage policies, and tests
+docs/                 Product, architecture, security, research, and QA docs
+```
+
+## Documentation
+
+- `docs/PRODUCT_RESEARCH.md` — dated market research and the rationale for added features
+- `docs/ARCHITECTURE.md` — product, frontend, data, and deployment architecture
+- `docs/SECURITY.md` — threat model, RLS, uploads, privacy, anti-abuse, and launch controls
+- `docs/DEPLOYMENT.md` — Supabase and Vercel setup/release procedure
+- `docs/LEGACY_AUDIT.md` — findings from the original prototype
+- `design-qa.md` — implementation/reference comparison and responsive QA result
+- `AGENTS.md` — durable implementation rules for future coding agents
+
+## Production limitations
+
+The following are launch gates, not finished production claims:
+
+- Connect campus membership onboarding and server-backed content queries/mutations
+- Rerun the passing local database policy suite against the integrated Preview
+  project and expand the production role/abuse matrix
+- Implement the trusted image decode, metadata-strip, WebP re-encode, and cleanup worker
+- Add operational moderation, reports, blocks, retention jobs, and alerting
+- Load profiles, listings, services, conversations, and reputation from verified records
+- Complete legal review for privacy, eligibility, prohibited items, and payments
+
+Until those gates are complete, this build is a high-fidelity functional
+prototype and hardened backend foundation—not a live transactional marketplace.

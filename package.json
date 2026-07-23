@@ -1,0 +1,46 @@
+{
+  "name": "venturr-campus-exchange",
+  "version": "1.0.0",
+  "description": "A secure, student-first campus marketplace and services exchange.",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": "22.x",
+    "npm": ">=10.9.0"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "start": "npm run dev",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run test && npm run build",
+    "verify": "npm run check && npm audit --omit=dev --audit-level=high"
+  },
+  "dependencies": {
+    "@fontsource-variable/archivo": "5.2.8",
+    "@fontsource-variable/inter": "5.2.8",
+    "@phosphor-icons/react": "2.1.10",
+    "@supabase/supabase-js": "2.57.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-router-dom": "7.18.0",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "24.10.0",
+    "@types/react": "19.1.16",
+    "@types/react-dom": "19.1.9",
+    "@vitejs/plugin-react": "5.0.4",
+    "jsdom": "27.0.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "3.2.7"
+  }
+}

@@ -69,8 +69,10 @@ Desktop navigation exposes Marketplace and Services as sibling tabs. Mobile navi
 
 - `AppShell`: skip link, desktop header, mobile navigation, main landmark, toast/status region.
 - `AppRouter`: lazy route boundaries, protected routes, not-found screen.
-- `AuthProvider`: session lifecycle plus owner-scoped profile/membership loading;
-  authorization remains in RLS and derived RPCs.
+- `AuthProvider`: session lifecycle plus owner-scoped profile/membership loading.
+  Route loading covers only Auth bootstrap and the first account fetch;
+  background membership/profile refreshes keep the active route mounted.
+  Authorization remains in RLS and derived RPCs.
 - `ErrorBoundary`: safe recovery UI and redacted error reporting.
 - `CampusContext`: selected and verified campus, derived from server data rather than arbitrary client input.
 

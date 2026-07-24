@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { z } from "zod";
+import { isAccountBootstrapPending } from "../lib/authLoading";
 import {
   googleAuthEnabled,
   isSupabaseConfigured,
@@ -278,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setAccountLoading(false);
     }
-  }, [session?.user]);
+  }, [session?.user.id]);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -420,10 +421,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [membership, profile, session]);
 
-  const loading =
-    authLoading ||
-    accountLoading ||
-    Boolean(session?.user && accountUserId !== session.user.id);
+  const loading = isAccountBootstrapPending(
+    authLoading,
+    session?.user.id ?? null,
+    accountUserId,
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({

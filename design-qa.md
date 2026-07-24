@@ -51,6 +51,8 @@ Verified characteristics:
 - Signed-in users without completed onboarding redirect to `/onboarding`.
 - A confirmed matching college email can claim its campus automatically.
 - An unmatched email can request a campus and enters pending ID review.
+- Unmatched-domain detection keeps the onboarding form mounted and usable
+  throughout background account refreshes.
 - Google sign-in is disabled in the UI while its provider flag is false.
 - Profile fields can be edited without exposing or editing the private email.
 - Password visibility uses an explicitly labelled icon button.
@@ -61,7 +63,7 @@ Verified characteristics:
 ## Automated evidence
 
 - TypeScript strict typecheck: passed
-- Vitest and React Testing Library: 17 tests passed
+- Vitest and React Testing Library: 20 tests passed
 - Vite production build: passed
 - Largest JavaScript chunk: approximately 259 KB before gzip
 - Production dependency audit: 0 vulnerabilities

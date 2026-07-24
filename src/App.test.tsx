@@ -11,22 +11,38 @@ import {
 
 const authState: AuthContextValue = {
   configured: false,
+  configurationError: null,
+  googleEnabled: false,
   loading: false,
+  accountLoading: false,
+  accountError: null,
   session: null,
   user: null,
+  profile: null,
+  membership: null,
+  campuses: [],
   student: null,
   signIn: vi.fn(),
+  signInWithGoogle: vi.fn(),
   signUp: vi.fn(),
+  claimCampusFromEmail: vi.fn(),
+  requestCampusMembership: vi.fn(),
+  completeOnboarding: vi.fn(),
+  updateProfile: vi.fn(),
+  refreshAccount: vi.fn(),
   signOut: vi.fn(),
 };
 
 beforeEach(() => {
   authState.configured = false;
   authState.session = null;
+  authState.profile = null;
+  authState.membership = null;
+  authState.campuses = [];
   vi.clearAllMocks();
 });
 
-function renderRoute(route: string, authenticated = false) {
+function renderRoute(route: string, authenticated = false, onboarded = true) {
   authState.user = authenticated
     ? ({
         id: "test-user",
@@ -45,6 +61,34 @@ function renderRoute(route: string, authenticated = false) {
         course: "Campus profile not completed",
         verified: false,
         joinedYear: 2026,
+      }
+    : null;
+  authState.profile = authenticated
+    ? {
+        userId: "test-user",
+        displayName: "Test Student",
+        avatarPath: null,
+        preferredCampusId: "10000000-0000-4000-8000-000000000001",
+        course: "Computer Science",
+        graduationYear: 2027,
+        bio: "",
+        onboardingCompletedAt: onboarded ? "2026-07-23T00:00:00.000Z" : null,
+      }
+    : null;
+  authState.membership = authenticated
+    ? {
+        id: "20000000-0000-4000-8000-000000000001",
+        campusId: "10000000-0000-4000-8000-000000000001",
+        status: "verified",
+        verificationMethod: "college_email",
+        verifiedAt: "2026-07-23T00:00:00.000Z",
+        expiresAt: "2027-07-23T00:00:00.000Z",
+        campus: {
+          id: "10000000-0000-4000-8000-000000000001",
+          name: "Test Campus",
+          slug: "test-campus",
+          city: "Test City",
+        },
       }
     : null;
 
@@ -70,6 +114,8 @@ describe("Venturr authentication entry", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Continue to Venturr" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in securely" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue with Google/ })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Explore" })).toHaveAttribute("href", "/explore");
   });
 
   it("switches to account creation without navigating away", async () => {
@@ -94,7 +140,7 @@ describe("Venturr authentication entry", () => {
 
     await user.click(screen.getByRole("tab", { name: "Create account" }));
     await user.type(screen.getByLabelText("Full name"), "Test Student");
-    await user.type(screen.getByLabelText("Campus email"), "student@campus.test");
+    await user.type(screen.getByLabelText("College email"), "student@campus.test");
     await user.type(screen.getByLabelText("Password"), "StrongPassword!");
     await user.click(
       screen.getByRole("checkbox", {
@@ -105,7 +151,7 @@ describe("Venturr authentication entry", () => {
 
     expect(
       await screen.findByRole("status"),
-    ).toHaveTextContent("Check your campus inbox to confirm your email");
+    ).toHaveTextContent("Check your college inbox to confirm your email");
     expect(authState.signUp).toHaveBeenCalledWith({
       displayName: "Test Student",
       email: "student@campus.test",
@@ -113,11 +159,33 @@ describe("Venturr authentication entry", () => {
       acceptedTerms: true,
     });
     expect(screen.getByLabelText("Full name")).toHaveValue("");
-    expect(screen.getByLabelText("Campus email")).toHaveValue("");
+    expect(screen.getByLabelText("College email")).toHaveValue("");
+  });
+
+  it("offers a public product tour without exposing marketplace content", () => {
+    renderRoute("/explore");
+
+    expect(
+      screen.getByRole("heading", { name: "See how the campus exchange fits together." }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Explore the product flow without exposing/),
+    ).toHaveTextContent("Real campus content stays behind sign-in.");
+    expect(screen.queryByText("Ergonomic study chair")).not.toBeInTheDocument();
   });
 });
 
 describe("empty authenticated product routes", () => {
+  it("requires onboarding before opening product routes", async () => {
+    renderRoute("/marketplace", true, false);
+
+    expect(
+      await screen.findByRole("heading", { name: "Complete your campus profile" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Find what you need on campus." }))
+      .not.toBeInTheDocument();
+  });
+
   it("contains no bundled marketplace or service fixtures", () => {
     renderRoute("/marketplace", true);
 
@@ -137,6 +205,24 @@ describe("empty authenticated product routes", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No services yet" })).toBeInTheDocument();
     expect(screen.queryByText("Student laptop")).not.toBeInTheDocument();
+  });
+
+  it("edits and saves the owner profile", async () => {
+    const user = userEvent.setup();
+    renderRoute("/profile", true);
+
+    await user.click(screen.getByRole("button", { name: "Edit profile" }));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(authState.updateProfile).toHaveBeenCalledWith({
+      displayName: "Test Student",
+      course: "Computer Science",
+      graduationYear: 2027,
+      bio: "",
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your profile has been updated.",
+    );
   });
 });
 

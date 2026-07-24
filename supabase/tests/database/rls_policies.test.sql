@@ -116,6 +116,32 @@ select is(
   'clients cannot bypass the immutable image reservation RPC'
 );
 
+select is(
+  has_table_privilege('authenticated', 'public.campus_memberships', 'insert'),
+  false,
+  'campus membership requests use the derived RPC boundary'
+);
+
+select is(
+  has_function_privilege(
+    'authenticated',
+    'public.claim_campus_from_verified_email()',
+    'execute'
+  ),
+  true,
+  'authenticated users can claim only their own email-matched campus'
+);
+
+select is(
+  has_function_privilege(
+    'anon',
+    'public.claim_campus_from_verified_email()',
+    'execute'
+  ),
+  false,
+  'anonymous users cannot call campus detection'
+);
+
 insert into public.campuses(
   id,
   slug,
@@ -222,6 +248,18 @@ values
     '{"display_name":"Moderator"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    '20000000-0000-0000-0000-000000000005',
+    'authenticated',
+    'authenticated',
+    'unconfirmed@policy.test',
+    '',
+    null,
+    '{}'::jsonb,
+    '{"display_name":"Unconfirmed"}'::jsonb,
+    now(),
+    now()
   );
 
 insert into private.moderator_assignments(
@@ -238,12 +276,40 @@ values (
 set local role authenticated;
 select set_config(
   'request.jwt.claim.sub',
+  '20000000-0000-0000-0000-000000000005',
+  true
+);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select throws_ok(
+  $$
+    select *
+    from public.request_campus_membership(
+      '10000000-0000-0000-0000-000000000001'
+    )
+  $$,
+  '42501',
+  null,
+  'unconfirmed email cannot request a campus membership'
+);
+
+reset role;
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
   '20000000-0000-0000-0000-000000000001',
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
-insert into public.campus_memberships(campus_id)
-values ('10000000-0000-0000-0000-000000000001');
+select lives_ok(
+  $$
+    select *
+    from public.request_campus_membership(
+      '10000000-0000-0000-0000-000000000001'
+    )
+  $$,
+  'seller can request their own campus membership'
+);
 
 reset role;
 select set_config(
@@ -262,8 +328,15 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
-insert into public.campus_memberships(campus_id)
-values ('10000000-0000-0000-0000-000000000001');
+select lives_ok(
+  $$
+    select *
+    from public.request_campus_membership(
+      '10000000-0000-0000-0000-000000000001'
+    )
+  $$,
+  'buyer can request their own campus membership'
+);
 
 reset role;
 select set_config(
@@ -493,13 +566,9 @@ select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claim.role', 'anon', true);
 
 select is(
-  (
-    select count(*)::integer
-    from public.listings
-    where title = 'Wanted policy test calculator'
-  ),
-  1,
-  'anonymous users can read approved active listings'
+  has_table_privilege('anon', 'public.listings', 'select'),
+  false,
+  'anonymous users cannot read approved active listings'
 );
 
 reset role;
@@ -785,6 +854,59 @@ select throws_ok(
   '42501',
   null,
   'either participant blocking the other prevents new messages'
+);
+
+reset role;
+
+insert into public.campus_email_domains(campus_id, domain)
+values (
+  '10000000-0000-0000-0000-000000000001',
+  'policy.test'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '20000000-0000-0000-0000-000000000003',
+  true
+);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select lives_ok(
+  $$ select * from public.claim_campus_from_verified_email() $$,
+  'a confirmed exact-domain email can claim its campus'
+);
+
+select is(
+  (
+    select status::text
+    from public.campus_memberships
+    where user_id = '20000000-0000-0000-0000-000000000003'
+      and campus_id = '10000000-0000-0000-0000-000000000001'
+  ),
+  'verified',
+  'email campus detection creates a verified membership'
+);
+
+reset role;
+set local role anon;
+
+select is(
+  has_table_privilege('anon', 'public.listings', 'select'),
+  false,
+  'anonymous users have no marketplace read grant'
+);
+
+select is(
+  has_table_privilege('anon', 'public.services', 'select'),
+  false,
+  'anonymous users have no service read grant'
+);
+
+select is(
+  has_table_privilege('anon', 'public.profiles', 'select'),
+  false,
+  'anonymous users have no profile read grant'
 );
 
 reset role;

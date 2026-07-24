@@ -29,7 +29,7 @@ interface HeaderProps {
 
 export function Header({ theme, onToggleTheme }: HeaderProps) {
   const { openPost, conversations } = useApp();
-  const { signOut, student } = useAuth();
+  const { membership, signOut, student } = useAuth();
   const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -81,14 +81,16 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
           Venturr
         </NavLink>
 
-        <button className="campus-switcher" type="button" aria-label="Campus membership setup required">
+        <NavLink className="campus-switcher" to="/profile">
           <Buildings size={21} aria-hidden="true" />
           <span>
-            <strong>Campus access</strong>
-            <small>Setup required</small>
+            <strong>{membership?.campus.name ?? "Campus access"}</strong>
+            <small>
+              {membership?.status === "verified" ? "Verified member" : "Review pending"}
+            </small>
           </span>
           <CaretDown size={15} aria-hidden="true" />
-        </button>
+        </NavLink>
 
         <form className="global-search" role="search" onSubmit={submitSearch}>
           <MagnifyingGlass size={20} aria-hidden="true" />

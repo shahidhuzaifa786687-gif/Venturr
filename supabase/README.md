@@ -24,7 +24,7 @@ or product content.
 
 ## Replaying migrations
 
-The four baseline migration files are transaction-wrapped and safe to replay
+The five baseline migration files are transaction-wrapped and safe to replay
 in order against a database where they have already completed:
 
 - enum types are created only when absent;
@@ -102,6 +102,11 @@ using any other origin.
 - A confirmed Auth email whose exact domain is active for a campus is
   automatically verified for one year. Other requests remain pending for an
   audited moderator decision.
+- `claim_campus_from_verified_email` matches only the current confirmed Auth
+  user and does not expose the protected domain allowlist.
+- Unmatched students can create one derived `college_id_review` membership
+  request. Identity-document upload is deliberately not implemented until a
+  private trusted validation and retention pipeline exists.
 - Listing/service categories and pickup-zone labels must reference active,
   campus-scoped reference rows; free-form exact locations are not accepted.
 - Insert triggers derive user ownership and initial workflow state from

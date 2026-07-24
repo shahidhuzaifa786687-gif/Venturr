@@ -1,6 +1,6 @@
 # Venturr security and privacy guide
 
-Last reviewed: 2026-07-23
+Last reviewed: 2026-07-24
 
 This document defines the security baseline for the student-campus marketplace
 rebuild. It covers the React/Vite single-page application on Vercel and Supabase
@@ -26,6 +26,44 @@ The Supabase publishable key is intentionally public. RLS, grants, and policies
 must be secure even when an attacker calls the Supabase API without using the
 Venturr UI. A Supabase secret/service-role key bypasses RLS and is therefore a
 high-impact production credential.
+
+## Implementation review: 2026-07-24
+
+The authentication/account change was reviewed across the browser entry,
+Vercel headers, Supabase Auth settings, database grants/RLS, RPCs, local
+Storage usage, redirects, validation, and package supply chain.
+
+Resolved:
+
+- The enforced Vercel CSP previously had `connect-src 'self'`, which blocked
+  every hosted Supabase Auth and REST request. It is now pinned to the exact
+  configured Supabase HTTPS and WebSocket origins and covered by a regression
+  test.
+- Product records are no longer granted to `anon`; `/explore` contains no
+  student, listing, service, review, or conversation data.
+- Auth return destinations use an internal allowlist to prevent open redirects.
+- Campus membership creation moved behind current-user RPCs, confirmed email is
+  required, domain matching stays in the database, and active domains are
+  unique to one campus.
+- Onboarding completion, verification status, role, owner, campus match,
+  verification method, and timestamps are server-derived.
+- Saved listing/service IDs are no longer retained in browser `localStorage`
+  where they could cross account boundaries on a shared device.
+- No raw HTML rendering, browser secret key, tracked credential pattern, or
+  high-severity production dependency advisory was found.
+
+Open production gates:
+
+- Apply the onboarding migration before the matching frontend deployment.
+- The currently inspected hosted project exposes a demo-named campus. Replace
+  all demo campus/domain/catalog rows with reviewed real records before launch.
+- Verify exact Supabase Site URL and callback allowlists in the Dashboard;
+  those values are not exposed by the public Auth settings endpoint.
+- Enable custom SMTP, CAPTCHA, reviewed Auth rate limits, production monitoring,
+  and two-account smoke tests.
+- College-ID evidence upload remains intentionally unavailable until the
+  private verification and short-retention controls in
+  `docs/CAMPUS_IDENTITY.md` are implemented.
 
 ## Architecture and trust boundaries
 
@@ -155,6 +193,12 @@ should use a Supabase server/browser client carrying that user's session.
 - A confirmed Auth email with an exact active domain match is currently
   auto-verified for one year. A nonmatching domain creates only a pending
   membership; it never falls back to self-asserted verification.
+- Exact-domain matching happens inside `claim_campus_from_verified_email()`.
+  The active domain allowlist is not readable by an ordinary student.
+- Pending college-ID review uses a derived membership request RPC. The current
+  browser does not upload or retain an ID image; adding evidence collection
+  requires a private bucket or reviewed verification provider, decoder checks,
+  reviewer access controls, audit records, and short retention.
 - Validate the provider's verified email/domain server-side. OAuth hints such
   as `hd` improve UX but are not authorization.
 - Enable email confirmation, custom SMTP, and Cloudflare Turnstile or hCaptcha.
@@ -184,6 +228,7 @@ Expected public variables:
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_GOOGLE_AUTH_ENABLED       # public rollout flag, normally false
 ```
 
 Expected server-only variables, only when a route truly needs them:

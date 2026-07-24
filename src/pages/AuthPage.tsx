@@ -1,7 +1,9 @@
 import {
   ArrowRight,
+  Compass,
   Eye,
   EyeSlash,
+  GoogleLogo,
   GraduationCap,
   Moon,
   ShieldCheck,
@@ -13,6 +15,10 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../hooks/useTheme";
+import {
+  readAuthReturnPath,
+  rememberAuthReturnPath,
+} from "../lib/authNavigation";
 import { signInSchema, signUpSchema } from "../lib/validation";
 
 type AuthMode = "signin" | "signup";
@@ -30,7 +36,17 @@ function getAuthErrorCode(error: unknown): string | null {
 }
 
 export function AuthPage() {
-  const { configured, loading, signIn, signUp, user } = useAuth();
+  const {
+    configured,
+    configurationError,
+    googleEnabled,
+    loading,
+    profile,
+    signIn,
+    signInWithGoogle,
+    signUp,
+    user,
+  } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -41,25 +57,37 @@ export function AuthPage() {
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    document.title = `${mode === "signup" ? "Create account" : "Sign in"} — Venturr`;
+    document.title = `${mode === "signup" ? "Create account" : "Sign in"} - Venturr`;
   }, [mode]);
 
-  if (!loading && user) {
-    const destination =
+  useEffect(() => {
+    const stateDestination =
       typeof location.state === "object" &&
       location.state !== null &&
-      "from" in location.state &&
-      typeof location.state.from === "string"
+      "from" in location.state
         ? location.state.from
-        : "/marketplace";
-    return <Navigate to={destination} replace />;
+        : null;
+    rememberAuthReturnPath(stateDestination ?? searchParams.get("next"));
+  }, [location.state, searchParams]);
+
+  if (!loading && user) {
+    return (
+      <Navigate
+        to={profile?.onboardingCompletedAt ? readAuthReturnPath() : "/onboarding"}
+        replace
+      />
+    );
   }
 
   function changeMode(nextMode: AuthMode) {
     setError("");
     setNotice("");
     setPasswordVisible(false);
-    setSearchParams(nextMode === "signup" ? { mode: "signup" } : {});
+    const next = searchParams.get("next");
+    const params = new URLSearchParams();
+    if (nextMode === "signup") params.set("mode", "signup");
+    if (next) params.set("next", next);
+    setSearchParams(params);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -69,7 +97,10 @@ export function AuthPage() {
     const form = event.currentTarget;
 
     if (!configured) {
-      setError("Add the public Supabase URL and publishable key to enable authentication.");
+      setError(
+        configurationError ??
+          "Add the public Supabase URL and publishable key to enable authentication.",
+      );
       return;
     }
 
@@ -99,12 +130,14 @@ export function AuthPage() {
         const result = await signUp(parsed.data);
         if (result.needsEmailConfirmation) {
           form.reset();
-          setNotice("Check your campus inbox to confirm your email, then return to sign in.");
+          setNotice(
+            "Check your college inbox to confirm your email. We will match your campus during setup.",
+          );
         }
       }
     } catch (authError) {
       if (mode === "signin" && getAuthErrorCode(authError) === "email_not_confirmed") {
-        setError("Confirm your email before signing in. Local emails appear in the development inbox.");
+        setError("Confirm your email before signing in.");
         return;
       }
       setError(
@@ -117,12 +150,25 @@ export function AuthPage() {
     }
   }
 
+  async function continueWithGoogle() {
+    if (!googleEnabled) return;
+    setError("");
+    setSubmitting(true);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setError("Google sign-in could not start. Use your college email instead.");
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="auth-page">
       <a className="skip-link" href="#auth-form">Skip to authentication</a>
       <header className="auth-header">
         <Link className="wordmark" to="/" aria-label="Venturr home">Venturr</Link>
         <div>
+          <Link to="/explore">Explore</Link>
           <Link to="/safety">Safety</Link>
           <button
             className="theme-toggle"
@@ -144,6 +190,11 @@ export function AuthPage() {
               Buy, rent, give away, request, tutor, or get unstuck inside one
               student-first campus network.
             </p>
+            <Link className="auth-explore-link" to="/explore">
+              <Compass size={18} aria-hidden="true" />
+              Explore how Venturr works
+              <ArrowRight size={16} weight="bold" aria-hidden="true" />
+            </Link>
           </div>
 
           <div className="auth-principles" aria-label="How Venturr works">
@@ -165,7 +216,7 @@ export function AuthPage() {
               <span><UsersThree size={22} aria-hidden="true" /></span>
               <div>
                 <h2>Help that keeps the work yours</h2>
-                <p>Tutoring, feedback, and collaboration—not academic impersonation.</p>
+                <p>Tutoring, feedback, and collaboration - not academic impersonation.</p>
               </div>
             </article>
           </div>
@@ -216,10 +267,29 @@ export function AuthPage() {
 
           {!configured ? (
             <div className="auth-config-note" role="status">
-              Authentication is ready for Supabase configuration. Add the two
-              public environment values from <code>.env.example</code>.
+              {configurationError ??
+                "Authentication is ready for Supabase configuration. Add the two public environment values from .env.example."}
             </div>
           ) : null}
+
+          <button
+            className="auth-provider-button"
+            type="button"
+            onClick={() => void continueWithGoogle()}
+            disabled={!googleEnabled || submitting}
+            aria-describedby={!googleEnabled ? "google-auth-status" : undefined}
+          >
+            <GoogleLogo size={20} weight="bold" aria-hidden="true" />
+            Continue with Google
+            {!googleEnabled ? <span>Coming soon</span> : null}
+          </button>
+          {!googleEnabled ? (
+            <p className="auth-provider-note" id="google-auth-status">
+              Google Workspace sign-in is prepared but intentionally locked for now.
+            </p>
+          ) : null}
+
+          <div className="auth-divider"><span>or use your college email</span></div>
 
           <form className="auth-form" id="auth-form" onSubmit={submit} noValidate>
             {mode === "signup" ? (
@@ -237,7 +307,7 @@ export function AuthPage() {
             ) : null}
 
             <label className="field">
-              Campus email
+              College email
               <input
                 name="email"
                 type="email"
@@ -303,7 +373,7 @@ export function AuthPage() {
               disabled={submitting}
             >
               {submitting
-                ? "Please wait…"
+                ? "Please wait..."
                 : mode === "signin"
                   ? "Sign in securely"
                   : "Create account"}
@@ -321,7 +391,7 @@ export function AuthPage() {
       </main>
 
       <footer className="auth-footer">
-        <span>Venturr · student-first campus exchange</span>
+        <span>Venturr - student-first campus exchange</span>
         <nav aria-label="Legal">
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>

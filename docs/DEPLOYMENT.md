@@ -66,6 +66,47 @@ and no ordinary browser operation requires a secret/service key.
 
 Use generic public auth errors so account existence is not disclosed.
 
+### Enable Google sign-up/sign-in when rollout is approved
+
+Google remains intentionally disabled in the current UI. The button is wired
+but disabled while `VITE_GOOGLE_AUTH_ENABLED=false`, and the hosted Supabase
+provider should also remain disabled until every step below is complete.
+
+1. In Google Cloud Console, create or select the production project.
+2. Open **Google Auth Platform** and complete **Branding**:
+   application name, support email, production homepage, Privacy URL, Terms
+   URL, and authorized domains. Complete Google verification if the consent
+   screen requires it.
+3. Under **Audience**, choose the intended user type. Use **External** when
+   students can belong to different Google Workspace tenants. While testing,
+   add only named test users.
+4. Under **Data Access**, request only `openid`, `email`, and `profile`. Venturr
+   does not need Gmail, Drive, Calendar, or other sensitive scopes.
+5. Under **Clients**, create an **OAuth 2.0 Web application** client.
+6. Add exact authorized JavaScript origins for the approved app origins, for
+   example `https://venturr.example` and local `http://127.0.0.1:5173`.
+7. Add the Supabase callback as the authorized redirect URI:
+   `https://PROJECT_REF.supabase.co/auth/v1/callback`. This is the Google
+   redirect URI; the app's `/auth/callback` belongs in Supabase URL
+   configuration instead.
+8. In Supabase Dashboard, open **Authentication > Providers > Google**, enter
+   the Google client ID and client secret, then enable the provider.
+9. In **Authentication > URL Configuration**, set the exact production Site
+   URL and add exact app callbacks such as
+   `https://venturr.example/auth/callback`. Add local and controlled Preview
+   callbacks separately; do not add a broad production wildcard.
+10. Confirm the exact production Supabase HTTPS and WebSocket origins are in
+    `vercel.json` CSP.
+11. Set `VITE_GOOGLE_AUTH_ENABLED=true` only in the Vercel environment being
+    tested, redeploy, and test new account, returning account, denied consent,
+    wrong Google account, callback failure, and logout in a private window.
+12. Verify the returned email is confirmed and campus membership is derived by
+    the database. Never authorize from Google's optional `hd` hint or from
+    browser user metadata.
+
+To roll back, set the Vercel flag to `false`, redeploy, and disable the Google
+provider in Supabase. Existing email/password access remains available.
+
 ## 5. Configure Vercel variables
 
 Set these for Development, Preview, and Production with the correct
@@ -74,6 +115,7 @@ environment-specific values:
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_GOOGLE_AUTH_ENABLED=false
 ```
 
 Only add server-side variables when a narrowly scoped server or Edge Function
@@ -89,9 +131,9 @@ Environment Variables and never expose them to preview logs or client bundles.
 
 ## 6. Pin the CSP to the project
 
-The committed CSP is a secure offline/default policy with `connect-src 'self'`.
-Before enabling live Supabase requests, replace the relevant portions of the
-`Content-Security-Policy` value in `vercel.json` with the exact project origin:
+The committed CSP is pinned to the current hosted project. When changing
+projects, replace the relevant portions of the `Content-Security-Policy` value
+in `vercel.json` with the new exact project origin:
 
 ```text
 img-src 'self' data: blob: https://PROJECT_REF.supabase.co;

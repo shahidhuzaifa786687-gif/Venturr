@@ -12,6 +12,46 @@ export type Condition = "New" | "Like new" | "Good" | "Fair";
 
 export type CampusZone = string;
 
+export type MembershipStatus =
+  | "pending"
+  | "verified"
+  | "rejected"
+  | "suspended"
+  | "expired";
+
+export type VerificationMethod =
+  | "college_email"
+  | "college_id_review"
+  | "manual_review";
+
+export interface CampusSummary {
+  id: string;
+  slug: string;
+  name: string;
+  city: string | null;
+}
+
+export interface CampusMembership {
+  id: string;
+  campusId: string;
+  status: MembershipStatus;
+  verificationMethod: VerificationMethod | null;
+  verifiedAt: string | null;
+  expiresAt: string | null;
+  campus: CampusSummary;
+}
+
+export interface UserProfile {
+  userId: string;
+  displayName: string;
+  avatarPath: string | null;
+  preferredCampusId: string | null;
+  course: string;
+  graduationYear: number | null;
+  bio: string;
+  onboardingCompletedAt: string | null;
+}
+
 export interface StudentSummary {
   id: string;
   name: string;
@@ -19,6 +59,8 @@ export interface StudentSummary {
   course: string;
   verified: boolean;
   joinedYear: number;
+  campusName?: string;
+  membershipStatus?: MembershipStatus;
 }
 
 export interface Listing {

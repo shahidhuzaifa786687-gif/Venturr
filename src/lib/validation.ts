@@ -102,6 +102,25 @@ const password = z
   .min(10, "Use at least 10 characters.")
   .max(128, "Password is too long.");
 
+const currentYear = new Date().getFullYear();
+
+const profileFields = {
+  displayName: plainText(2, 60),
+  course: plainText(2, 100),
+  graduationYear: z.coerce
+    .number()
+    .int()
+    .min(currentYear - 8, "Choose a valid graduation year.")
+    .max(currentYear + 10, "Choose a valid graduation year."),
+  bio: z
+    .string()
+    .trim()
+    .max(320, "Keep your bio to 320 characters or fewer.")
+    .refine((value) => !/[<>]/.test(value), {
+      message: "Angle brackets are not allowed.",
+    }),
+};
+
 export const signInSchema = z.object({
   email,
   password,
@@ -114,4 +133,11 @@ export const signUpSchema = z.object({
   acceptedTerms: z.literal(true, {
     error: "Accept the terms and privacy notice to continue.",
   }),
+});
+
+export const profileSchema = z.object(profileFields);
+
+export const onboardingSchema = z.object({
+  ...profileFields,
+  campusId: z.string().uuid("Choose a campus to continue."),
 });

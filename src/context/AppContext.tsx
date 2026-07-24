@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type Dispatch,
@@ -48,40 +47,14 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-const SAVED_LISTINGS_KEY = "venturr_saved_listings_v2";
-const SAVED_SERVICES_KEY = "venturr_saved_services_v2";
-const RETIRED_PREVIEW_KEYS = [
-  "venturr_saved_listings_v1",
-  "venturr_saved_services_v1",
-] as const;
-
-function storedSet(key: string): Set<string> {
-  try {
-    const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? "[]");
-    return new Set(Array.isArray(parsed) ? parsed.filter((value) => typeof value === "string") : []);
-  } catch {
-    return new Set();
-  }
-}
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [listings] = useState<Listing[]>([]);
   const [services] = useState<ServiceOffer[]>([]);
   const [conversations] = useState<Conversation[]>([]);
-  const [savedListingIds, setSavedListingIds] = useState(() =>
-    storedSet(SAVED_LISTINGS_KEY),
-  );
-  const [savedServiceIds, setSavedServiceIds] = useState(() =>
-    storedSet(SAVED_SERVICES_KEY),
-  );
+  const [savedListingIds, setSavedListingIds] = useState<Set<string>>(() => new Set());
+  const [savedServiceIds, setSavedServiceIds] = useState<Set<string>>(() => new Set());
   const [postKind, setPostKind] = useState<PostKind>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
-
-  useEffect(() => {
-    for (const key of RETIRED_PREVIEW_KEYS) {
-      window.localStorage.removeItem(key);
-    }
-  }, []);
 
   const notify = useCallback((message: string) => {
     setToast({ id: crypto.randomUUID(), message });
@@ -92,14 +65,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleStoredSet = useCallback(
     (
       id: string,
-      key: string,
       setter: Dispatch<SetStateAction<Set<string>>>,
     ) => {
       setter((current) => {
         const next = new Set(current);
         if (next.has(id)) next.delete(id);
         else next.add(id);
-        window.localStorage.setItem(key, JSON.stringify([...next]));
         return next;
       });
     },
@@ -109,7 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleSavedListing = useCallback(
     (id: string) => {
       const wasSaved = savedListingIds.has(id);
-      toggleStoredSet(id, SAVED_LISTINGS_KEY, setSavedListingIds);
+      toggleStoredSet(id, setSavedListingIds);
       notify(wasSaved ? "Removed from saved items." : "Saved for later.");
     },
     [notify, savedListingIds, toggleStoredSet],
@@ -118,7 +89,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleSavedService = useCallback(
     (id: string) => {
       const wasSaved = savedServiceIds.has(id);
-      toggleStoredSet(id, SAVED_SERVICES_KEY, setSavedServiceIds);
+      toggleStoredSet(id, setSavedServiceIds);
       notify(wasSaved ? "Removed from saved services." : "Service saved.");
     },
     [notify, savedServiceIds, toggleStoredSet],

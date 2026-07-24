@@ -16,6 +16,11 @@ The responsive frontend now starts with a real Supabase authentication entry:
 
 - Public sign-in and account-creation landing page
 - Email/password sign-up with confirmation callback support
+- A public `/explore` product tour with no student or marketplace data
+- Google OAuth wiring behind a disabled `VITE_GOOGLE_AUTH_ENABLED` gate
+- Mandatory post-confirmation onboarding with exact college-domain campus matching
+- Pending college-ID review requests for email domains that are not recognized
+- Owner-only profile editing for display name, course, graduation year, and bio
 - Protected marketplace, services, saved, inbox, and profile routes
 - Item-only Marketplace with sale, rental, free, and wanted filters
 - A distinct Services route and service-posting flow
@@ -28,7 +33,7 @@ The responsive frontend now starts with a real Supabase authentication entry:
 
 No campus, student, listing, service, conversation, rating, or image fixture is
 bundled into the browser. Authenticated product routes therefore start empty
-until the Supabase read/write data layer and campus onboarding are connected.
+until the remaining Supabase catalog read/write modules are connected.
 
 Supabase migrations, RLS policies, Storage policy scaffolding, opt-in demo SQL,
 and database policy tests are included.
@@ -87,6 +92,7 @@ and `PUBLISHABLE_KEY` into:
 ```text
 VITE_SUPABASE_URL=http://127.0.0.1:54321
 VITE_SUPABASE_PUBLISHABLE_KEY=<local PUBLISHABLE_KEY>
+VITE_GOOGLE_AUTH_ENABLED=false
 ```
 
 `.env.local` takes precedence over `.env`, which lets local development use
@@ -143,9 +149,9 @@ never an authorization control.
 `vercel.json` provides the Vite build, SPA fallback, immutable hashed-asset
 caching, CSP, and baseline security headers.
 
-Before connecting a real Supabase project, update the CSP in `vercel.json` with
-that project's exact HTTPS and WebSocket origins. Do not use
-`https://*.supabase.co`.
+The committed CSP is pinned to the currently configured hosted Supabase
+project. If the production project changes, update both exact HTTPS/WebSocket
+origins in `vercel.json`; do not use `https://*.supabase.co`.
 
 See `docs/DEPLOYMENT.md` for the complete environment, migration, CSP, Auth,
 preview, and production checklist.
@@ -164,6 +170,7 @@ docs/                 Product, architecture, security, research, and QA docs
 - `docs/ARCHITECTURE.md` — product, frontend, data, and deployment architecture
 - `docs/SECURITY.md` — threat model, RLS, uploads, privacy, anti-abuse, and launch controls
 - `docs/DEPLOYMENT.md` — Supabase and Vercel setup/release procedure
+- `docs/CAMPUS_IDENTITY.md` — college-domain and pending student-ID verification setup
 - `docs/LEGACY_AUDIT.md` — findings from the original prototype
 - `design-qa.md` — implementation/reference comparison and responsive QA result
 - `AGENTS.md` — durable implementation rules for future coding agents
@@ -172,7 +179,10 @@ docs/                 Product, architecture, security, research, and QA docs
 
 The following are launch gates, not finished production claims:
 
-- Connect campus membership onboarding and server-backed content queries/mutations
+- Apply `202607240005_account_onboarding.sql` before deploying the matching frontend
+- Replace demo campus configuration with reviewed real campuses, college email domains,
+  categories, and public pickup zones
+- Connect server-backed listing, service, favorite, conversation, and review queries/mutations
 - Rerun the passing local database policy suite against the integrated Preview
   project and expand the production role/abuse matrix
 - Implement the trusted image decode, metadata-strip, WebP re-encode, and cleanup worker

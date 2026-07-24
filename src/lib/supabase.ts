@@ -1,8 +1,32 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabasePublishableKey = import.meta.env
-  .VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+const browserSupabaseConfigSchema = z
+  .object({
+    url: z.string().url(),
+    publishableKey: z.string().min(20),
+  })
+  .superRefine(({ url }, context) => {
+    const parsed = new URL(url);
+    const isLocal = parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost";
+    if (parsed.protocol !== "https:" && !isLocal) {
+      context.addIssue({
+        code: "custom",
+        path: ["url"],
+        message: "Hosted Supabase URLs must use HTTPS.",
+      });
+    }
+  });
+
+const rawConfig = {
+  url: import.meta.env.VITE_SUPABASE_URL as string | undefined,
+  publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined,
+};
+
+const parsedConfig =
+  rawConfig.url && rawConfig.publishableKey
+    ? browserSupabaseConfigSchema.safeParse(rawConfig)
+    : null;
 
 /**
  * Browser access is intentionally limited to Supabase's publishable key.
@@ -11,8 +35,8 @@ const supabasePublishableKey = import.meta.env
  * boundary for every request.
  */
 export const supabase: SupabaseClient | null =
-  supabaseUrl && supabasePublishableKey
-    ? createClient(supabaseUrl, supabasePublishableKey, {
+  parsedConfig?.success
+    ? createClient(parsedConfig.data.url, parsedConfig.data.publishableKey, {
         auth: {
           flowType: "pkce",
           persistSession: true,
@@ -28,3 +52,10 @@ export const supabase: SupabaseClient | null =
     : null;
 
 export const isSupabaseConfigured = supabase !== null;
+export const supabaseConfigurationError =
+  parsedConfig && !parsedConfig.success
+    ? "The public Supabase configuration is invalid."
+    : null;
+
+export const googleAuthEnabled =
+  import.meta.env.VITE_GOOGLE_AUTH_ENABLED === "true";

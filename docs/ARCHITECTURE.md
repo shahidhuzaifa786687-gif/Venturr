@@ -43,7 +43,9 @@ Vercel serves the application. The browser uses the Supabase publishable credent
 | Route | Screen responsibility |
 | --- | --- |
 | `/` | Public Venturr value proposition with Supabase sign-in/sign-up |
+| `/explore` | Public, data-free product tour; all real campus records remain locked |
 | `/auth/callback` | Supabase PKCE/email-confirmation callback |
+| `/onboarding` | Authenticated college-domain detection, membership request, and profile completion |
 | `/marketplace` | Item-only browse, search, filters, sort, and saved-search entry |
 | `/marketplace/:listingId` | Item detail, gallery, seller trust, offer, and handoff context |
 | `/services` | Separate service-provider discovery and service categories |
@@ -55,7 +57,7 @@ Vercel serves the application. The browser uses the Supabase publishable credent
 | `/inbox` | Conversation list |
 | `/inbox/:conversationId` | Participant-only offer and message thread |
 | `/profile/:profileId` | Public-safe profile, trust signals, and active inventory |
-| `/account` | Private profile, campus membership, notification, privacy, and deletion settings |
+| `/profile` | Private owner profile, campus membership state, and profile editing |
 | `/account/listings` | Owner inventory, drafts, reserved, completed, and archived states |
 | `/safety`, `/privacy`, `/terms` | Required trust, privacy, and policy content |
 
@@ -67,7 +69,8 @@ Desktop navigation exposes Marketplace and Services as sibling tabs. Mobile navi
 
 - `AppShell`: skip link, desktop header, mobile navigation, main landmark, toast/status region.
 - `AppRouter`: lazy route boundaries, protected routes, not-found screen.
-- `AuthProvider`: session lifecycle only; authorization remains in RLS.
+- `AuthProvider`: session lifecycle plus owner-scoped profile/membership loading;
+  authorization remains in RLS and derived RPCs.
 - `ErrorBoundary`: safe recovery UI and redacted error reporting.
 - `CampusContext`: selected and verified campus, derived from server data rather than arbitrary client input.
 
@@ -122,13 +125,14 @@ Item listings use explicit transaction types such as `sale`, `rent`, `free`, and
 
 ## Data flow
 
-### Public or campus browse
+### Signed-in campus browse
 
 1. The route parses and normalizes URL search parameters.
 2. The query layer requests active, unexpired item listings for the permitted campus.
 3. Postgres grants and RLS restrict visible rows.
-4. The query cache stores only public-safe projections.
-5. Search/filter state remains shareable in the URL.
+4. Product records are not granted to `anon`; `/explore` uses static product copy only.
+5. The query cache stores only public-safe projections.
+6. Search/filter state remains shareable in the URL.
 
 The Services route runs a distinct services query. It does not reuse an unfiltered listings feed.
 
@@ -158,7 +162,15 @@ Only conversation participants can select or insert messages. Subscribe to a sin
 ## Authentication and authorization
 
 - Prefer institution Google/Microsoft identity where available, with email OTP/magic link fallback.
+- Keep Google OAuth code behind `VITE_GOOGLE_AUTH_ENABLED=false` until the
+  provider, consent screen, callbacks, and production smoke tests are complete.
 - Campus affiliation is a protected membership record, not a client-supplied domain or editable user metadata value.
+- `claim_campus_from_verified_email()` resolves only the current confirmed Auth
+  email against protected active domain records. The browser never downloads
+  the domain allowlist.
+- Unmatched domains may create a pending `college_id_review` membership, but
+  the browser does not collect an identity document until a trusted private
+  verification processor is implemented.
 - Do not assume every institution uses `.edu`; support configured domains and privacy-minimized fallback verification.
 - RLS is enabled on every exposed table and Storage bucket.
 - Owners can mutate only their records and only through valid state transitions.
@@ -171,6 +183,7 @@ The browser may receive only:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_GOOGLE_AUTH_ENABLED` (public feature gate; not an authorization control)
 
 These identify the project but do not replace RLS.
 
